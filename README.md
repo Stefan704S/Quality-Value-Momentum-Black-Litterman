@@ -123,13 +123,25 @@ jupyter notebook strategy.ipynb
 - Trading costs are a fixed cost per trade by size bucket; market impact on illiquid micro-caps and borrowing costs in the short-selling variant are not modelled.
 - The $1 price filter (instead of $5) has not been tested.
 
+## My contribution
+
+I was responsible for the full implementation of the notebook: data cleaning, universe construction, signals, Black-Litterman portfolio construction, backtest, statistics, figures and tables.
+
 ## Tools
 
 Python (pandas, NumPy, `cvxpy` with the Clarabel solver for the monthly optimisations, statsmodels for Newey-West regressions, scikit-learn for Ledoit-Wolf shrinkage, Matplotlib).
 
 ## Authors
 
-Stefan Stevanovic — MSc in Finance, HEC Lausanne (2026–27).
+| Name | GitHub |
+|---|---|
+| Stefan Stevanovic | [Stefan704S](https://github.com/Stefan704S) |
+| Lukas Tonkovic | [LukasTonkovic](https://github.com/LukasTonkovic) |
+| Matteo Wets | [MatteoWets](https://github.com/MatteoWets) |
+| Marko Zivaljevic | |
+| Victor Mentrier | |
+
+MSc in Finance, HEC Lausanne (2026–27).
 
 ## References
 
