@@ -22,7 +22,7 @@ The backtest is fully point-in-time: a decision taken at the end of month *t* us
 
 **Research question:** Is there information in a quality–value–momentum score, and can a constrained benchmark-relative portfolio transfer it into net alpha?
 
-**Answer, in short:** The signal is strong in the cross-section (FF5 alpha of 5.9% p.a., t = 5.6), but little of it reaches the portfolio. The strategy beats its benchmark by 0.53% p.a. net (t = 2.75), mostly through known factors and almost entirely before 1996. In Grinold & Kahn's terms: a good information coefficient, a low transfer coefficient.
+**Answer, in short:** The signal is strong in the cross-section (FF5 alpha of 5.9% p.a., t = 5.6), but little of it reaches the portfolio. The strategy beats its benchmark by 0.53% p.a. net (t = 2.75), mostly through known factors and almost entirely before 1996.
 
 ## Data
 
