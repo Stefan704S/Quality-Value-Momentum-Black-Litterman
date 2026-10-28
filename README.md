@@ -82,9 +82,96 @@ Alphas are negative for low-score groups and positive for high-score groups in *
 - **Little of the signal reaches the portfolio.** The ±5% active limit and the long-only constraint bind every month; the realised tracking error is only 1.3% against a 3% budget.
 - **Trading costs take about half of the active return:** 0.96% p.a. gross vs. 0.53% net.
 - **The active return is mostly known factors and concentrated before 1996.** It loads on HML (and on UMD before 1996); the FF5 + UMD alpha is not significant net of costs, and the active return is about zero from 1996 — even gross of costs.
-- **A simpler portfolio transfers more of the signal.** Holding only the top score quintile, value-weighted, earns 1.9% p.a. active net of costs with a significant FF5 + UMD alpha (1.8%, t = 2.8), at the cost of higher tracking error and the same information ratio.
+- **A simpler portfolio transfers more of the signal.** Holding only the top score quintile, value-weighted, earns 1.9% p.a. active net of costs with a significant FF5 + UMD alpha (1.8%, t = 2.8), at the cost of higher tracking error and the same information ratio (see [Extensions](#extensions-beyond-the-baseline)).
 
 ![Cumulative Q5 − Q1 return of each signal](results/figures/v2_signal_spreads.png)
+
+## Extensions beyond the baseline
+
+On top of the required implementation, I added several analyses to understand *why* the strategy delivers what it does, rather than only reporting its performance.
+
+### 1. Design improvements (v2), each behind a switch
+
+Every change is a flag in the notebook (`QUALITY_GP`, `USE_RESMOM`, `GRADES`, `TE_TARGET`), so its effect can be tested one at a time against the original specification.
+
+| Change | Why |
+|---|---|
+| **Gross profitability** (Novy-Marx, 2013) instead of sales growth in the quality score | High sales growth predicts *lower* returns (Lakonishok, Shleifer & Vishny, 1994), so it was working against the score |
+| **Residual momentum** (Blitz, Huij & Martens, 2011) added as a third signal | Momentum net of FF3 exposures, weakly correlated with quality (−0.09) and value (−0.06) |
+| **Graded views** Q5 − Q1 + ½(Q4 − Q2) instead of Q5 − Q1 | The middle quintiles carry information too |
+| **Alpha-maximising optimiser** under a TE budget (Grinold & Kahn) instead of mean-variance utility | With τ = 1/60 the posterior barely moves from Π, so the original optimiser used only a small part of the TE budget |
+
+### 2. Where does the signal come from?
+
+Each component is sorted on its own (table in [Key results](#1-the-score-predicts-returns)). **Quality is the strongest component once factors are controlled for** (FF5 + UMD alpha 3.4%, t = 3.4), while residual momentum loses more than half of its alpha when UMD is added: it is less independent from plain momentum than intended.
+
+### 3. Diagnosing the transfer: which constraint binds?
+
+| Diagnostic | Value |
+|---|---|
+| Months with an active weight at the ±5% limit | 100% |
+| Months with a portfolio at zero weight (long-only) | 100% |
+| Months with ex-ante TE at the 3% budget | 2.1% |
+| Average ex-ante TE | 1.24% |
+| Turnover (% per month): strategy / benchmark | 9.4 / 0.7 |
+| Trading costs (% p.a.): strategy / benchmark | 0.45 / 0.03 |
+
+The active-weight limit and the long-only constraint, not the TE budget, are what stop the signal from reaching the portfolio.
+
+![Active weights, turnover and limits](results/figures/v2_implementation.png)
+
+### 4. Robustness: one change at a time
+
+| Variant (net) | Active (% p.a.) | Active from 1996 | TE (%) | FF5 + UMD alpha | Short (%) |
+|---|---|---|---|---|---|
+| Base | 0.53 (2.75) | 0.03 (0.12) | 1.33 | 0.20 (1.07) | 0 |
+| Active limit 2.5% | 0.24 (2.17) | −0.07 (−0.49) | 0.76 | 0.08 (0.73) | 0 |
+| Active limit 10% | 0.91 (2.90) | 0.20 (0.45) | 2.08 | 0.44 (1.55) | 0 |
+| TE budget 2% | 0.51 (2.77) | 0.06 (0.22) | 1.26 | 0.22 (1.26) | 0 |
+| Ledoit-Wolf covariance | 0.58 (3.19) | 0.13 (0.49) | 1.25 | 0.28 (1.64) | 0 |
+| Rolling view (60-month realised) | 0.35 (1.43) | −0.30 (−0.91) | 1.65 | −0.02 (−0.10) | 0 |
+| Short selling allowed | 0.64 (2.20) | −0.33 (−0.89) | 1.98 | 0.37 (1.44) | 22.2 |
+
+- The active return scales almost linearly with the active limit, which confirms that this limit binds. Cutting the TE budget to 2% changes nothing.
+- Ledoit-Wolf shrinkage helps slightly and is the only variant with a borderline FF5 + UMD alpha (t = 1.64).
+- A rolling view follows the decay of the signal and weakens the strategy.
+- Allowing short selling (22% shorts, in low-score micro and small caps) barely helps, and borrowing costs are not even modelled.
+- **No variant gives a significant FF5 + UMD alpha at 5%, or a significant active return after 1995.** The variants were reported for information only; the main specification was not changed after seeing them, to avoid data snooping.
+
+### 5. Is Black-Litterman needed? Simple Q5 portfolios
+
+As a benchmark for the optimiser, I tested simple rules without Black-Litterman: hold only the best score groups, value-weighted, with the same trading costs and the same evaluation.
+
+| Portfolio (net) | Return (% p.a.) | Active | Active gross | Active from 1996 | TE (%) | IR | FF5 + UMD alpha | Turnover (%/month) | Costs (% p.a.) |
+|---|---|---|---|---|---|---|---|---|---|
+| Black-Litterman strategy | 12.63 | 0.53 (2.75) | 0.96 (4.86) | 0.03 (0.12) | 1.33 | 0.40 | 0.20 (1.07) | 9.4 | 0.45 |
+| **Q5 (all sizes)** | **14.01** | **1.92 (3.08)** | 2.82 (4.52) | 0.79 (0.93) | 4.77 | 0.40 | **1.77 (2.77)** | 33.0 | 0.93 |
+| Q4 + Q5 (all sizes) | 13.20 | 1.10 (2.74) | 1.72 (4.25) | 0.21 (0.39) | 3.06 | 0.36 | 0.97 (2.27) | 22.6 | 0.64 |
+| Large Q5 | 13.85 | 1.76 (2.59) | 2.54 (3.74) | 0.76 (0.83) | 5.21 | 0.34 | 1.75 (2.59) | 33.6 | 0.81 |
+| Large Q4 + Q5 | 12.98 | 0.89 (2.01) | 1.42 (3.20) | 0.14 (0.24) | 3.47 | 0.26 | 0.87 (1.94) | 22.9 | 0.55 |
+
+![Simple long-only alternatives vs. benchmark](results/figures/v2_simple_alternatives.png)
+
+- **More alpha:** holding only Q5 earns 3–4× the active return of the Black-Litterman strategy, with a significant FF5 + UMD alpha net of costs, something the BL strategy never achieves.
+- **Not a microcap effect:** the large-cap Q5 version (~150 stocks, ~19% of the market) does almost as well (1.75%, t = 2.59).
+- **Same efficiency:** the information ratio is identical (0.40). The simple rule takes 3–4× more tracking error and pays twice the costs.
+- **Adding Q4 dilutes the signal:** the active return and the alpha roughly halve.
+- **Conclusion:** Black-Litterman is a more diversified, lower-risk way to hold the same signal, not a more efficient one.
+
+### 6. Signal decay: by decade and market state
+
+| Period | Months | Active net (% p.a.) | Active gross (% p.a.) |
+|---|---|---|---|
+| 1970s | 119 | 1.77 (3.56) | 2.16 (4.03) |
+| 1980s | 120 | 0.88 (2.24) | 1.40 (3.45) |
+| 1990s | 120 | 0.65 (2.14) | 0.90 (3.04) |
+| 2000s | 120 | 0.29 (0.81) | 0.72 (1.88) |
+| 2010s | 120 | −0.18 (−0.66) | 0.26 (0.93) |
+| 2020s | 72 | −0.73 (−0.83) | −0.11 (−0.12) |
+| Benchmark up | 419 | 0.49 (1.74) | 0.91 (3.15) |
+| Benchmark down | 252 | 0.61 (1.44) | 1.03 (2.52) |
+
+The active return falls decade after decade and turns negative after 2010, which is consistent with the decay of published anomalies. It does not depend on the market direction.
 
 Full derivations, every figure and table, and the discussion of limitations are in [`docs/project_guide.pdf`](docs/project_guide.pdf).
 
